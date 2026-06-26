@@ -1,37 +1,6 @@
-# PenguinCAM
+# DumbCAM
 
-**Onshape-to-CNC for FRC Teams**
-
-A web-based tool for FRC robotics teams to automatically generate CNC G-code from Onshape designs. No CAM software required! Built by Team 6238, hosted for all FRC teams.
-
-🔗 **Demo video:**  
-[![Demo video](https://img.youtube.com/vi/gFReFDz-_LI/0.jpg)](https://youtu.be/zPZCTVh2n2Q)
-
-
-🔗 **Live app:** https://penguincam.popcornpenguins.com
-
----
-
-## What is PenguinCAM?
-
-PenguinCAM streamlines the workflow from CAD design to CNC machining for FRC teams:
-
-1. **Design in Onshape** → Create flat plates or tubes, with holes and pockets
-2. **Open app → "Send to PenguinCAM"** → One-click export from Onshape
-3. **Orient & Generate** → Rotate part, auto-generate toolpaths
-4. **Download or Save to Drive** → Ready to run on your CNC router
-
-**No difficult CAM software, no manual exports!** PenguinCAM knows what FRC teams need.
-
-Designed to feel like 3D printer slicers or laser cutter software. Get the design, orient it on the machine, and go. Launching directly from Onshape means no export/import steps, lost files or inconsistent naming. Every part designed by your team members automatically get the same CNC behavior. Students don't have to know feeds & speeds, understand ramp angles, risk machine collisions. Just select the part and go.
-
-**Multi-team support:** Other teams can use the hosted service at https://penguincam.popcornpenguins.com! Just upload a `PenguinCAM-config.yaml` file to your Onshape documents to customize settings for your CNC machine. See "For Other FRC Teams" below.
-
----
-
-## Features
-
-### 🤖 **Built for FRC**
+**Easiest Onshape-to-CNC Workflow**
 
 ✅ **Automatic hole detection:**
 - All circular holes (preserves exact CAD dimensions)
@@ -391,11 +360,10 @@ This project is licensed under the [MIT License](LICENSE.txt).
 
 ## Credits
 
-**Built by FRC Team 6238 Popcorn Penguins**
+**This project was forked from the origonal tool made by FRC Team 6238 Popcorn Penguins**
 
-For questions or support:
-- GitHub Issues: https://github.com/6238/PenguinCAM/issues
-- Team mentor: Josh Sirota <josh@popcornpenguins.com>
+Link to original repository:
+- GitHub: https://github.com/6238/PenguinCAM
 
 ---
 
