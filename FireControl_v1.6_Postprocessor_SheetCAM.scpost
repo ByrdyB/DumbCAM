@@ -1,0 +1,144 @@
+-- Langmuir Systems
+-- www.langmuirsystems.com
+
+firstPierceTime = 0 --this is an extra delay added to the first pierce as needed by some machines
+version = 1.6
+
+local function isEmpty(s)
+   return s == nil or s == ''
+end
+
+function OnAbout(event)
+   ctrl = event:GetTextCtrl()
+   ctrl:AppendText("Post for CrossFire PRO and CrossFire using FireControl Software\n")
+   ctrl:AppendText("\n")
+   ctrl:AppendText("For CrossFire PRO and CrossFire w/powered z-axis add-on, be sure to set Pierce Height, Plunge Rate, and Cut Height values in order to activate IHS sequence. There is a 1 inch rapid retract move after each cut loop by default.\n")
+   ctrl:AppendText("\nFor CrossFire without powered Z-axis, Pierce Height and Cut Height must be both set to 0 to disable IHS.\n")
+end
+
+function OnInit()
+   programSpeed = 0 -- variable overridden with fastest cut speed
+   post.SetOptions(post.ARC_SEGMENTS)
+   post.SetCommentChars ("()", "[]")  --make sure ( and ) characters do not appear in system text
+   post.Text ("(v".. version .."-sc)\n")
+   post.Text ("G90 G94\n")
+   post.Text ("G17\n")
+   if(scale == metric) then
+      post.Text ("G21 (Units: Metric)\n") --metric mode
+   else
+      post.Text ("G20 (Units: Inches)\n") --inch mode
+   end
+   post.TextDirect ("H0\n") -- thc OFF, Machine in control of Z
+
+   bigArcs = 1 --stitch arc segments together
+   minArcSize = 0.05 --arcs smaller than this are converted to moves
+   firstPierce = firstPierceTime
+end
+
+function OnFinish()
+
+   post.Text ("M5 M30\n")
+   post.Text ("(PS" .. programSpeed .. ")\n")
+end
+
+function OnRapid()
+   if (math.hypot(endX - currentX, endY - currentY) < 0.001) then return end
+   if(endX > 1e30) then return end
+   post.Text ("G0")
+   post.ModalNumber (" X", endX * scale, "0.0###")
+   post.ModalNumber (" Y", endY * scale, "0.0###")
+--   post.ModalNumber (" Z", endZ * scale, "0.0###")
+   post.Eol()
+end
+
+function OnMove()
+
+   if(currentX ~= endX or currentY ~= endY) then
+      post.Text ("G1")
+      post.ModalNumber (" X", endX * scale, "0.0###")
+      post.ModalNumber (" Y", endY * scale, "0.0###")
+      --post.ModalNumber (" Z", endZ * scale, "0.0###")
+      post.ModalNumber (" F", feedRate * scale, "0.0###")
+      post.Eol()
+      if(feedRate * scale > programSpeed and leadinType == 0) then
+         programSpeed = feedRate * scale
+      end
+   end
+end
+
+function OnArc()
+   if(arcAngle <0) then
+      post.Text ("G3")
+   else
+      post.Text ("G2")
+   end
+   post.NonModalNumber (" X", endX * scale, "0.0###")
+   post.NonModalNumber (" Y", endY * scale, "0.0###")
+--   post.ModalNumber (" Z", endZ * scale, "0.0###")
+   post.Text (" I")
+   post.Number ((arcCentreX - currentX) * scale, "0.0###")
+   post.Text (" J")
+   post.Number ((arcCentreY - currentY) * scale, "0.0###")
+   post.ModalNumber (" F", feedRate * scale, "0.0###")
+   post.Eol()
+
+   if(feedRate * scale > programSpeed and leadinType == 0) then
+      programSpeed = feedRate * scale
+   end
+end
+
+
+function OnPenDown()
+   post.TextDirect ("\n")
+   ihs = pierceHeight ~= 0 and cutHeight ~= 0 --enable IHS if both pierce and cut are non-zero
+   if (ihs) then
+      post.TextDirect ("G92 Z0.\n") -- reset Z to 0
+      post.TextDirect ("G38.2 Z".. post.FormatNumber(-5 * 25.4 * scale, "0.0##") .." F".. post.FormatNumber(100 * 25.4 * scale, "0.0##") .."\n") -- IIHS Fast Down
+      post.TextDirect ("G38.4 Z".. post.FormatNumber(0.5 * 25.4 * scale, "0.0##") .." F".. post.FormatNumber(20 * 25.4 * scale, "0.0##") .."\n") -- IIHS Slow Up
+      post.TextDirect ("G92 Z"..post.FormatNumber(0, "0.0##") .."\n") -- reset Z to IHS 0
+      post.TextDirect ("G0 Z"..post.FormatNumber(0.02 * 25.4 * scale, "0.0##") .." (IHS Backlash)\n") -- reset Z to IHS 0
+      post.TextDirect ("G92 Z"..post.FormatNumber(0, "0.0##") .."\n") -- reset Z to IHS 0
+
+      post.TextDirect ("G0 Z"..post.FormatNumber(pierceHeight * scale, "0.0##") .." (Pierce Height)\n") -- Z to Pierce
+   end
+   post.Text ("M3\n") -- fire torch
+
+   if (pierceDelay + firstPierce > 0.001) then -- pierce delay
+      post.Text ("G4 P")
+      post.Number (pierceDelay + firstPierce,"0.###")
+      firstPierce = 0
+      post.Eol()
+   end
+
+   if (ihs) then
+      post.TextDirect ("G1 Z"..post.FormatNumber(cutHeight * scale, "0.0##") .." F".. post.FormatNumber(plungeRate * scale, "0.0##") .." (Cut Height)\n") -- Z to Cut
+   end
+   post.TextDirect ("H1\n") -- thc ON, THC in control of Z
+end
+
+
+function OnPenUp()
+   ihs = pierceHeight ~= 0 and cutHeight ~= 0 --enable IHS if both pierce and cut are non-zero
+   post.Text ("H0\n") -- thc OFF, Machine in control of Z
+   post.Text ("M5\n")
+   if (endDelay > 0) then
+      post.Text ("G4 P")
+      post.Number (endDelay,"0.###")
+      post.Eol()
+   end
+   if (ihs) then
+      post.TextDirect ("G0 Z" .. post.FormatNumber(25.4 * scale, "0.0##") .. "\n") -- Z to rapid height
+   end
+   post.CancelModalNumbers()
+end
+
+
+function OnDrill()
+   OnRapid()
+   OnPenDown()
+   endZ = drillZ
+   OnMove()
+   OnPenUp()
+   endZ = safeZ
+   OnRapid()
+end
