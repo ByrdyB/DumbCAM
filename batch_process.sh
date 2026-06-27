@@ -7,7 +7,7 @@ THICKNESS=${1:-0.25}
 TABS=${2:-4}
 
 echo "========================================="
-echo "FRC CAM Batch Processor"
+echo "DumbCAM Batch Processor"
 echo "========================================="
 echo "Material thickness: ${THICKNESS}\""
 echo "Number of tabs: ${TABS}"
@@ -23,7 +23,7 @@ for dxf_file in *.dxf; do
     gcode_file="${dxf_file%.dxf}.gcode"
     
     echo "Processing: $dxf_file → $gcode_file"
-    python frc_cam_postprocessor.py "$dxf_file" "$gcode_file" \
+    python dumbcam_postprocessor.py "$dxf_file" "$gcode_file" \
         --thickness "$THICKNESS" \
         --tabs "$TABS"
     

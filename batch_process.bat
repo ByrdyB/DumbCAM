@@ -12,7 +12,7 @@ set TABS=%2
 if "%TABS%"=="" set TABS=4
 
 echo =========================================
-echo FRC CAM Batch Processor
+echo DumbCAM Batch Processor
 echo =========================================
 echo Material thickness: %THICKNESS%"
 echo Number of tabs: %TABS%
@@ -25,7 +25,7 @@ for %%f in (*.dxf) do (
     set "gcode_file=%%~nf.gcode"
     
     echo Processing: !dxf_file! -^> !gcode_file!
-    python frc_cam_postprocessor.py "!dxf_file!" "!gcode_file!" --thickness %THICKNESS% --tabs %TABS%
+    python dumbcam_postprocessor.py "!dxf_file!" "!gcode_file!" --thickness %THICKNESS% --tabs %TABS%
     
     if errorlevel 1 (
         echo   X Failed

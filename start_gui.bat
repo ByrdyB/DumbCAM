@@ -1,9 +1,9 @@
 @echo off
-REM FRC CAM Post-Processor GUI Launcher
+REM DumbCAM GUI Launcher
 REM For Windows
 
 echo ==========================================
-echo FRC CAM Post-Processor GUI
+echo DumbCAM
 echo ==========================================
 echo.
 
@@ -39,8 +39,8 @@ if %errorlevel% neq 0 (
 )
 
 REM Check if post-processor exists
-if not exist "frc_cam_postprocessor.py" (
-    echo Error: frc_cam_postprocessor.py not found
+if not exist "dumbcam_postprocessor.py" (
+    echo Error: dumbcam_postprocessor.py not found
     echo Please make sure it's in the same directory as this script
     pause
     exit /b 1
@@ -52,8 +52,8 @@ if not exist "templates" (
     echo.
     echo You need this structure:
     echo   your-directory\
-    echo   ├── frc_cam_gui_app.py
-    echo   ├── frc_cam_postprocessor.py
+    echo   ├── dumbcam_gui_app.py
+    echo   ├── dumbcam_postprocessor.py
     echo   └── templates\
     echo       └── index.html
     echo.
@@ -92,18 +92,18 @@ echo ==========================================
 echo.
 
 REM Start the server (not in background, so it can be killed properly)
-start "PenguinCAM Server" python frc_cam_gui_app.py
+start "DumbCAM Server" python dumbcam_gui_app.py
 
 REM Wait a moment for server to start
 timeout /t 3 /nobreak >nul
 
 REM Open browser
-start http://localhost:6238
+start http://localhost:8080
 
 REM Instructions
 echo.
 echo Server is running in a separate window
-echo Close the "PenguinCAM Server" window to stop
+echo Close the "DumbCAM Server" window to stop
 echo.
 echo You can close THIS window safely now.
 echo.

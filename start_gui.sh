@@ -1,9 +1,9 @@
 #!/bin/bash
-# FRC CAM Post-Processor GUI Launcher
+# DumbCAM GUI Launcher
 # For Mac and Linux
 
 echo "=========================================="
-echo "FRC CAM Post-Processor GUI"
+echo "DumbCAM"
 echo "=========================================="
 echo ""
 
@@ -34,8 +34,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # Check if post-processor exists
-if [ ! -f "frc_cam_postprocessor.py" ]; then
-    echo "❌ Error: frc_cam_postprocessor.py not found"
+if [ ! -f "dumbcam_postprocessor.py" ]; then
+    echo "❌ Error: dumbcam_postprocessor.py not found"
     echo "Please make sure it's in the same directory as this script"
     exit 1
 fi
@@ -46,8 +46,8 @@ if [ ! -d "templates" ]; then
     echo ""
     echo "You need this structure:"
     echo "  your-directory/"
-    echo "  ├── frc_cam_gui_app.py"
-    echo "  ├── frc_cam_postprocessor.py"
+    echo "  ├── dumbcam_gui_app.py"
+    echo "  ├── dumbcam_postprocessor.py"
     echo "  └── templates/"
     echo "      └── index.html"
     echo ""
@@ -99,11 +99,11 @@ cleanup() {
         
         # Force kill if still running
         kill -9 $SERVER_PID 2>/dev/null
-        pkill -9 -f "frc_cam_gui_app.py" 2>/dev/null
+        pkill -9 -f "dumbcam_gui_app.py" 2>/dev/null
     fi
-    
+
     echo "✓ Server stopped"
-    echo "✓ Port 6238 released"
+    echo "✓ Port 8080 released"
     exit 0
 }
 
@@ -111,7 +111,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 # Start the server in background
-python3 frc_cam_gui_app.py &
+python3 dumbcam_gui_app.py &
 SERVER_PID=$!
 
 # Wait a moment for server to start
@@ -120,10 +120,10 @@ sleep 2
 # Open browser
 if command -v open &> /dev/null; then
     # macOS
-    open http://localhost:6238
+    open http://localhost:8080
 elif command -v xdg-open &> /dev/null; then
     # Linux
-    xdg-open http://localhost:6238
+    xdg-open http://localhost:8080
 fi
 
 echo "Server PID: $SERVER_PID"
