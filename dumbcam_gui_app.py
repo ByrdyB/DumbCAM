@@ -953,7 +953,7 @@ def drive_status():
         return jsonify({
             'available': True,
             'enabled': False,
-            'message': 'Google Drive not configured for your team. Add PenguinCAM-config.yaml to enable.'
+            'message': 'Google Drive not configured for your team. Add DumbCAM-config.yaml to enable.'
         })
 
     # Check if user is authenticated with Google

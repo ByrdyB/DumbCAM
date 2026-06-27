@@ -1741,7 +1741,7 @@ class OnshapeClient:
 
     def fetch_config_file(self, document_id=None):
         """
-        Search for and fetch PenguinCAM-config.yaml from the classrooms
+        Search for and fetch DumbCAM-config.yaml from the classrooms
         (companies/teams) the authenticated user belongs to.
 
         The user is the source of truth for which classroom's config to
@@ -1763,7 +1763,7 @@ class OnshapeClient:
             str with raw YAML content, or None if not found or on error
         """
         try:
-            log("\n🔍 Searching for PenguinCAM-config.yaml...")
+            log("\n🔍 Searching for DumbCAM-config.yaml...")
             self.last_config_url = None
 
             user_companies = self.get_companies() or []
@@ -1799,7 +1799,7 @@ class OnshapeClient:
                     'foundIn': 'w',
                     'when': 'latest',
                     'documentFilter': 7,
-                    'rawQuery': '_all:PenguinCAM-config.yaml',
+                    'rawQuery': '_all:DumbCAM-config.yaml',
                     'limit': 50,
                 }
                 response = self._make_api_request('POST', '/documents/search', json=search_body)
@@ -1814,7 +1814,7 @@ class OnshapeClient:
                         candidates[item_id] = item
 
             if not candidates:
-                log("   ℹ️  No PenguinCAM-config.yaml found in your classrooms")
+                log("   ℹ️  No DumbCAM-config.yaml found in your classrooms")
                 return None
 
             # Belt-and-suspenders: re-verify each candidate's owner via document
@@ -1837,7 +1837,7 @@ class OnshapeClient:
                     log(f"     ✗ Owner not in user's classrooms (ignoring)")
 
             if not verified:
-                log("   ❌ No PenguinCAM-config.yaml found in your classrooms after verification")
+                log("   ❌ No DumbCAM-config.yaml found in your classrooms after verification")
                 return None
 
             def sort_key(entry):
@@ -1896,7 +1896,7 @@ class OnshapeClient:
                 log(f"   🔍 DEBUG: Element: {elem_name} (type: {elem_type})")
                 # Match exact filename (case-insensitive)
                 if (elem.get('type') == 'Blob' and
-                    elem_name.lower() in ['penguincam-config.yaml', 'penguincam-config.yml']):
+                    elem_name.lower() in ['dumbcam-config.yaml', 'dumbcam-config.yml']):
                     config_element = elem
                     log(f"   🔍 DEBUG: MATCH! Found config element")
                     break

@@ -140,8 +140,8 @@ class TeamConfig:
     """
     Manages team-specific configuration for PenguinCAM.
 
-    Config is loaded from a YAML file stored in the team's Onshape documents
-    named "PenguinCAM-config.yaml". Falls back to Team 6238 defaults for any
+    Config is loaded from a YAML file stored in Onshape documents
+    named "DumbCAM-config.yaml". Falls back to DumbCAM defaults for any
     missing values.
     """
 
