@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Import the main post-processor
 sys.path.insert(0, str(Path(__file__).parent))
-from frc_cam_postprocessor import FRCPostProcessor
+from dumbcam_postprocessor import FRCPostProcessor
 import argparse
 
 
@@ -154,7 +154,7 @@ class SafeTestPostProcessor(FRCPostProcessor):
         report.append("="*60)
         report.append("")
         report.append("1. If dry run looks good, run the NORMAL version:")
-        report.append("   python frc_cam_postprocessor.py input.dxf output.gcode")
+        report.append("   python dumbcam_postprocessor.py input.dxf output.gcode")
         report.append("")
         report.append("2. Test on scrap/foam material first")
         report.append("")

@@ -60,7 +60,7 @@ except ImportError:
 
 # Import authentication (optional - will work without it)
 try:
-    from penguincam_auth import init_auth
+    from dumbcam_auth import init_auth
     AUTH_AVAILABLE = True
 except ImportError:
     AUTH_AVAILABLE = False
@@ -75,7 +75,7 @@ except ImportError:
     log("⚠️  Onshape integration not available")
 
 # Import postprocessor directly (for API calls instead of subprocess)
-from frc_cam_postprocessor import FRCPostProcessor, PostProcessorResult
+from dumbcam_postprocessor import FRCPostProcessor, PostProcessorResult
 from plasma_postprocessor import (
     PlasmaPostProcessor, PlasmaConfig, polylines_to_loops, dxf_to_polylines,
     normalize_to_origin, build_loops_with_leads
@@ -272,7 +272,7 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # Path to the post-processor script (assumed to be in same directory)
 SCRIPT_DIR = Path(__file__).parent
-POST_PROCESSOR = SCRIPT_DIR / 'frc_cam_postprocessor.py'
+POST_PROCESSOR = SCRIPT_DIR / 'dumbcam_postprocessor.py'
 
 # ============================================================================
 # Helper Functions

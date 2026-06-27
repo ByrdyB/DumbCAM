@@ -11,7 +11,7 @@ import os
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from frc_cam_postprocessor import FRCPostProcessor, MATERIAL_PRESETS
+from dumbcam_postprocessor import FRCPostProcessor, MATERIAL_PRESETS
 from team_config import TeamConfig
 
 

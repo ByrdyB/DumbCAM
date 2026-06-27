@@ -3,7 +3,7 @@ import unittest
 import tempfile
 import os
 import re
-from frc_cam_postprocessor import FRCPostProcessor
+from dumbcam_postprocessor import FRCPostProcessor
 
 
 class TestYCoordinateAdjustment(unittest.TestCase):

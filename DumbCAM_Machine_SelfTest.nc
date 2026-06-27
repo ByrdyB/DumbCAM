@@ -1,4 +1,4 @@
-(PenguinCAM Machine Compatibility Self-Test)
+(DumbCAM Machine Compatibility Self-Test)
 (VERIFY ALL MOTION VISUALLY — NO CUTTING)
 
 (--- Modal Baseline ---)

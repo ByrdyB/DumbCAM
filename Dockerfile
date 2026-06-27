@@ -19,4 +19,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Start gunicorn
-CMD gunicorn frc_cam_gui_app:app --bind 0.0.0.0:$PORT
+CMD gunicorn dumbcam_gui_app:app --bind 0.0.0.0:$PORT

@@ -1579,7 +1579,8 @@ class FRCPostProcessor:
         timestamp_display = timestamp[:16]
 
         # Title
-        gcode.append(f"({self.team_name.upper()} - Team {self.team_number})")
+        if self.team_name and self.team_number:
+            gcode.append(f"({self.team_name.upper()} - Team {self.team_number})")
         if is_multilayer:
             gcode.append("(PenguinCAM CNC Post-Processor - MULTI-LAYER)")
         else:

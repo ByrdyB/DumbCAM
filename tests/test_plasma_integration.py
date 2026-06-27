@@ -24,7 +24,7 @@ class TestPlasmaFlaskRoute(unittest.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.mkdtemp()
 
-        import frc_cam_gui_app as _app_module
+        import dumbcam_gui_app as _app_module
         _app_module.UPLOAD_FOLDER = self._tmpdir
         _app_module.OUTPUT_FOLDER = self._tmpdir
         _app_module.app.config['TESTING'] = True

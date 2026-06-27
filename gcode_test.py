@@ -1,6 +1,6 @@
 from pygcode import *
 from termcolor import colored
-from frc_cam_postprocessor import FRCPostProcessor
+from dumbcam_postprocessor import FRCPostProcessor
 import argparse
 import io
 import sys
