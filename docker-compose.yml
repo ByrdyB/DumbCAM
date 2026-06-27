@@ -1,0 +1,9 @@
+services:
+  app:
+    image: ghcr.io/byrdyb/dumbcam:latest
+    # build: .   # uncomment to build from source instead
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    restart: unless-stopped
