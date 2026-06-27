@@ -130,7 +130,7 @@ function saveSettings() {
     };
 
     try {
-        localStorage.setItem('penguinCAM_settings', JSON.stringify(settings));
+        localStorage.setItem('dumbCAM_settings', JSON.stringify(settings));
     } catch (e) {
         console.warn('Failed to save settings to localStorage:', e);
     }
@@ -141,7 +141,7 @@ function saveSettings() {
  */
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('penguinCAM_settings');
+        const saved = localStorage.getItem('dumbCAM_settings');
         const settings = saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
 
         // Get server-provided default tool diameter from HTML (set by team config)

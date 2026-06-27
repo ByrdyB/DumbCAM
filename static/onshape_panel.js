@@ -11,7 +11,7 @@
     // DOM elements
     const instruction = document.getElementById('instruction');
     const buttonGroup = document.getElementById('buttonGroup');
-    const sendBtn = document.getElementById('sendToPenguinCAM');
+    const sendBtn = document.getElementById('sendToDumbCAM');
     const selectAnotherBtn = document.getElementById('selectAnotherFace');
     const multilayerCheckbox = document.getElementById('multilayerMode');
     const mode2DLabel = document.getElementById('mode2DLabel');
@@ -23,14 +23,14 @@
 
     /**
      * Request a face selection from Onshape
-     * This is called on initialization and after "Send to PenguinCAM"
+     * This is called on initialization and after "Send to DumbCAM"
      */
     function requestFaceSelection() {
         selectionRequestCounter++;
         isWaitingForSelection = true;
         const selectionMessage = {
             messageName: 'requestSelection',
-            messageId: 'penguincam-selection-' + selectionRequestCounter,
+            messageId: 'dumbcam-selection-' + selectionRequestCounter,
             documentId: context.documentId,
             workspaceId: context.workspaceId,
             elementId: context.elementId,
@@ -48,7 +48,7 @@
      * Send applicationInit message to Onshape
      */
     function initialize() {
-        console.log('PenguinCAM panel initializing...', context);
+        console.log('DumbCAM panel initializing...', context);
 
         // Send initialization message to Onshape
         const initMessage = {
@@ -69,7 +69,7 @@
         requestFaceSelection();
 
         // Set up button handlers
-        sendBtn.addEventListener('click', handleSendToPenguinCAM);
+        sendBtn.addEventListener('click', handleSendToDumbCAM);
         selectAnotherBtn.addEventListener('click', handleSelectAnother);
 
         // Set up mode checkbox handler
@@ -215,12 +215,12 @@
     }
 
     /**
-     * Handle "Send to PenguinCAM" button
-     * Opens full PenguinCAM interface in new window and requests another selection
+     * Handle "Send to DumbCAM" button
+     * Opens full DumbCAM interface in new window and requests another selection
      */
-    function handleSendToPenguinCAM() {
+    function handleSendToDumbCAM() {
         const url = buildUrl('/onshape/import');
-        console.log('Opening PenguinCAM:', url);
+        console.log('Opening DumbCAM:', url);
 
         // Open in new tab (without window features to make it a tab, not popup)
         window.open(url, '_blank');
