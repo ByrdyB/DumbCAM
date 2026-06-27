@@ -3,14 +3,14 @@ import unittest
 import tempfile
 import os
 import re
-from dumbcam_postprocessor import FRCPostProcessor
+from dumbcam_postprocessor import DumbCAMPostProcessor
 
 
 class TestYCoordinateAdjustment(unittest.TestCase):
     """Test the _adjust_y_coordinate helper function."""
 
     def setUp(self):
-        self.pp = FRCPostProcessor(0.25, 0.157)
+        self.pp = DumbCAMPostProcessor(0.25, 0.157)
 
     def test_positive_offset(self):
         """Test shifting Y by positive offset."""
@@ -65,7 +65,7 @@ class TestTubeFacingGeneration(unittest.TestCase):
     """Test the generate_tube_facing_gcode method."""
 
     def setUp(self):
-        self.pp = FRCPostProcessor(0.25, 0.157)
+        self.pp = DumbCAMPostProcessor(0.25, 0.157)
         self.pp.apply_material_preset('aluminum')
 
     def _generate_tube_gcode_to_file(self, output_path, tube_size='1x1'):

@@ -9,11 +9,11 @@ from pathlib import Path
 
 # Import the main post-processor
 sys.path.insert(0, str(Path(__file__).parent))
-from dumbcam_postprocessor import FRCPostProcessor
+from dumbcam_postprocessor import DumbCAMPostProcessor
 import argparse
 
 
-class SafeTestPostProcessor(FRCPostProcessor):
+class SafeTestPostProcessor(DumbCAMPostProcessor):
     """Extended version with safety features for testing"""
     
     def __init__(self, *args, **kwargs):

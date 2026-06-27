@@ -100,7 +100,7 @@ MATERIAL_PRESETS = {
 }
 
 
-class FRCPostProcessor:
+class DumbCAMPostProcessor:
     def __init__(self, material_thickness: float, tool_diameter: float, units: str = "inch",
                  config: Optional[TeamConfig] = None):
         """
@@ -4976,7 +4976,7 @@ def main():
         if not args.output_gcode:
             parser.error("output_gcode is required for tube-facing mode")
 
-        pp = FRCPostProcessor(args.thickness, args.tool_diameter)
+        pp = DumbCAMPostProcessor(args.thickness, args.tool_diameter)
         pp.apply_material_preset('aluminum')  # Tube facing is always aluminum
 
         # Call API to generate G-code
@@ -5015,7 +5015,7 @@ def main():
             parser.error("output_gcode is required for tube-pattern mode")
 
         # Create post-processor with tube WALL thickness (not height!)
-        pp = FRCPostProcessor(material_thickness=args.thickness,
+        pp = DumbCAMPostProcessor(material_thickness=args.thickness,
                               tool_diameter=args.tool_diameter,
                               units=args.units)
 
@@ -5086,7 +5086,7 @@ def main():
             parser.error("input_dxf is required for standard mode")
 
         # Create post-processor
-        pp = FRCPostProcessor(material_thickness=args.thickness,
+        pp = DumbCAMPostProcessor(material_thickness=args.thickness,
                               tool_diameter=args.tool_diameter,
                               units=args.units)
 

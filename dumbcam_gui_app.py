@@ -75,7 +75,7 @@ except ImportError:
     log("⚠️  Onshape integration not available")
 
 # Import postprocessor directly (for API calls instead of subprocess)
-from dumbcam_postprocessor import FRCPostProcessor, PostProcessorResult
+from dumbcam_postprocessor import DumbCAMPostProcessor, PostProcessorResult
 from plasma_postprocessor import (
     PlasmaPostProcessor, PlasmaConfig, polylines_to_loops, dxf_to_polylines,
     normalize_to_origin, build_loops_with_leads
@@ -673,7 +673,7 @@ def process_file():
         try:
             if is_aluminum_tube:
                 # Tube mode - use tube-pattern API
-                pp = FRCPostProcessor(
+                pp = DumbCAMPostProcessor(
                     material_thickness=thickness,
                     tool_diameter=tool_diameter,
                     units='inch',
@@ -709,7 +709,7 @@ def process_file():
                 )
             else:
                 # Standard mode - use standard API
-                pp = FRCPostProcessor(
+                pp = DumbCAMPostProcessor(
                     material_thickness=thickness,
                     tool_diameter=tool_diameter,
                     units='inch',

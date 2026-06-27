@@ -1,5 +1,5 @@
 """
-Unit tests for FRCPostProcessor.
+Unit tests for DumbCAMPostProcessor.
 Focus on higher-level functions; minimal tests for low-level utilities.
 """
 
@@ -11,7 +11,7 @@ import os
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from dumbcam_postprocessor import FRCPostProcessor, MATERIAL_PRESETS
+from dumbcam_postprocessor import DumbCAMPostProcessor, MATERIAL_PRESETS
 from team_config import TeamConfig
 
 
@@ -19,11 +19,11 @@ class TestLowLevelUtilities(unittest.TestCase):
     """Minimal tests for low-level utilities - just verify they work"""
 
     def test_distance_2d_basic(self):
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         self.assertEqual(pp._distance_2d((0, 0), (3, 4)), 5.0)
 
     def test_format_time_basic(self):
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         self.assertEqual(pp._format_time(125), "2m 5s")
 
 
@@ -31,7 +31,7 @@ class TestMaterialPresets(unittest.TestCase):
     """Test material preset application"""
 
     def test_plywood_preset_applies_correctly(self):
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')
         self.assertEqual(pp.feed_rate, 75.0)
         self.assertEqual(pp.spindle_speed, 18000)
@@ -39,7 +39,7 @@ class TestMaterialPresets(unittest.TestCase):
         self.assertEqual(pp.stepover_percentage, 0.65)
 
     def test_aluminum_preset_applies_correctly(self):
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('aluminum')
         self.assertEqual(pp.feed_rate, 55.0)
         self.assertEqual(pp.spindle_speed, 18000)
@@ -47,20 +47,20 @@ class TestMaterialPresets(unittest.TestCase):
         self.assertEqual(pp.stepover_percentage, 0.25)
 
     def test_polycarbonate_preset_applies_correctly(self):
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('polycarbonate')
         self.assertEqual(pp.feed_rate, 75.0)
         self.assertEqual(pp.stepover_percentage, 0.55)
 
     def test_invalid_material_falls_back_to_plywood(self):
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('unobtainium')
         # Should fall back to plywood defaults
         self.assertEqual(pp.feed_rate, 75.0)
         self.assertEqual(pp.ramp_angle, 20.0)
 
     def test_mm_units_converts_feed_rates(self):
-        pp = FRCPostProcessor(6.35, 4.0, units='mm')  # 0.25" = 6.35mm
+        pp = DumbCAMPostProcessor(6.35, 4.0, units='mm')  # 0.25" = 6.35mm
         pp.apply_material_preset('plywood')
         # 75 IPM * 25.4 = 1905 mm/min
         self.assertEqual(pp.feed_rate, 75.0 * 25.4)
@@ -70,7 +70,7 @@ class TestHelicalPassCalculation(unittest.TestCase):
     """Test helical pass calculations for safe ramp angles"""
 
     def setUp(self):
-        self.pp = FRCPostProcessor(0.25, 0.157)
+        self.pp = DumbCAMPostProcessor(0.25, 0.157)
         self.pp.apply_material_preset('plywood')
         # Set known values for predictable results
         self.pp.material_top = 0.25
@@ -107,7 +107,7 @@ class TestHoleClassification(unittest.TestCase):
     """Test hole classification based on tool diameter"""
 
     def setUp(self):
-        self.pp = FRCPostProcessor(0.25, 0.157)
+        self.pp = DumbCAMPostProcessor(0.25, 0.157)
 
     def test_holes_smaller_than_min_millable_are_skipped(self):
         # min_millable_hole = tool_diameter * 1.2 = 0.157 * 1.2 = 0.1884"
@@ -142,7 +142,7 @@ class TestHoleSorting(unittest.TestCase):
     """Test hole sorting for travel optimization using nearest neighbor + 2-opt"""
 
     def setUp(self):
-        self.pp = FRCPostProcessor(0.25, 0.157)
+        self.pp = DumbCAMPostProcessor(0.25, 0.157)
 
     def test_holes_optimized_for_minimum_travel(self):
         """Test that holes are sorted using nearest neighbor optimization"""
@@ -192,7 +192,7 @@ class TestPocketCircularDetection(unittest.TestCase):
     """Test circular pocket detection"""
 
     def setUp(self):
-        self.pp = FRCPostProcessor(0.25, 0.157)
+        self.pp = DumbCAMPostProcessor(0.25, 0.157)
 
     def test_circle_is_detected_as_circular(self):
         # Generate points on a circle
@@ -236,7 +236,7 @@ class TestPerimeterAndPocketIdentification(unittest.TestCase):
     """Test identification of perimeter and pockets"""
 
     def setUp(self):
-        self.pp = FRCPostProcessor(0.25, 0.157)
+        self.pp = DumbCAMPostProcessor(0.25, 0.157)
 
     def test_largest_polygon_becomes_perimeter(self):
         # Large outer rectangle
@@ -263,7 +263,7 @@ class TestUnmillableFeatures(unittest.TestCase):
 
     def test_hole_too_small_fails(self):
         """Test that holes too small for the tool cause generation to fail."""
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('aluminum')
 
         # Manually add a hole that's too small (smaller than min_millable_hole)
@@ -289,7 +289,7 @@ class TestUnmillableFeatures(unittest.TestCase):
 
     def test_multiple_small_holes_fails(self):
         """Test that multiple unmillable holes are all reported."""
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('aluminum')
 
         # Add three holes that are too small
@@ -317,7 +317,7 @@ class TestUnmillableFeatures(unittest.TestCase):
 
     def test_millable_hole_succeeds(self):
         """Test that holes large enough for the tool succeed."""
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('aluminum')
 
         # Add a hole that's large enough (> min_millable_hole)
@@ -351,7 +351,7 @@ class TestUnmillableFeatures(unittest.TestCase):
         gracefully by rounding them. This test creates an extreme case that might
         trigger the invalid geometry check.
         """
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('aluminum')
 
         # Create a perimeter with a very narrow notch (internal corner)
@@ -388,7 +388,7 @@ class TestGCodeFormatting(unittest.TestCase):
 
     def setUp(self):
         """Create a simple test part that exercises all major operations."""
-        self.pp = FRCPostProcessor(0.25, 0.157)
+        self.pp = DumbCAMPostProcessor(0.25, 0.157)
         self.pp.apply_material_preset('plywood')
 
         # Add a hole
@@ -484,7 +484,7 @@ class TestTeamConfigIntegration(unittest.TestCase):
         material_preset = config.get_material_preset('plywood')
 
         # Create postprocessor and apply custom preset
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.spindle_speed = material_preset['spindle_speed']
         pp.feed_rate = material_preset['feed_rate']
         pp.plunge_rate = material_preset['plunge_rate']
@@ -524,7 +524,7 @@ class TestTeamConfigIntegration(unittest.TestCase):
         material_preset = config.get_material_preset('aluminum')
 
         # Create postprocessor and apply custom preset
-        pp = FRCPostProcessor(0.25, 0.157, units='mm')  # Use mm to make values more distinctive
+        pp = DumbCAMPostProcessor(0.25, 0.157, units='mm')  # Use mm to make values more distinctive
         pp.spindle_speed = material_preset['spindle_speed']
         pp.feed_rate = material_preset['feed_rate'] * 25.4  # Convert to mm/min
         pp.plunge_rate = material_preset['plunge_rate'] * 25.4
@@ -580,7 +580,7 @@ class TestTeamConfigIntegration(unittest.TestCase):
         self.assertTrue(config.pause_before_perimeter)
 
         # Create postprocessor with pause enabled
-        pp = FRCPostProcessor(0.25, 0.157, config=config)
+        pp = DumbCAMPostProcessor(0.25, 0.157, config=config)
         pp.apply_material_preset('plywood')
 
         # Verify pause_before_perimeter is set
@@ -622,7 +622,7 @@ class TestTeamConfigIntegration(unittest.TestCase):
         self.assertFalse(config.pause_before_perimeter)
 
         # Create postprocessor with pause disabled
-        pp = FRCPostProcessor(0.25, 0.157, config=config)
+        pp = DumbCAMPostProcessor(0.25, 0.157, config=config)
         pp.apply_material_preset('plywood')
 
         # Verify pause_before_perimeter is not set
@@ -660,10 +660,10 @@ class TestTeamConfigIntegration(unittest.TestCase):
         material_preset = config.get_material_preset('plywood')
 
         # Create two postprocessors: one with default, one with custom
-        pp_default = FRCPostProcessor(0.25, 0.157)
+        pp_default = DumbCAMPostProcessor(0.25, 0.157)
         pp_default.apply_material_preset('plywood')
 
-        pp_custom = FRCPostProcessor(0.25, 0.157)
+        pp_custom = DumbCAMPostProcessor(0.25, 0.157)
         pp_custom.apply_material_preset('plywood')
         pp_custom.ramp_angle = material_preset['ramp_angle']
 
@@ -703,7 +703,7 @@ class TestCircularPerimeter(unittest.TestCase):
         config._data['machines']['default']['machining'] = config._data['machines']['default'].get('machining', {})
         config._data['machines']['default']['machining']['pockets'] = {'contour_threshold': 0}
 
-        pp = FRCPostProcessor(0.236, 0.157, config=config)
+        pp = DumbCAMPostProcessor(0.236, 0.157, config=config)
         pp.apply_material_preset('plywood')  # Sets required material parameters
 
         # Washer centered at origin: outer 4" diameter, inner 2" diameter
@@ -768,7 +768,7 @@ class TestCircularPerimeter(unittest.TestCase):
 
     def test_concentric_circles_correct_identification(self):
         """Test that concentric circles correctly identify outer as perimeter, inner as hole."""
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
 
         # Three concentric circles: outer perimeter, two inner holes
         pp.circles = [
@@ -800,7 +800,7 @@ class TestPocketContouring(unittest.TestCase):
     def test_large_through_cut_hole_is_contoured(self):
         """Test that a large hole cutting to sacrifice board is contoured instead of cleared"""
         from team_config import TeamConfig
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')
 
         # Outer perimeter (10" × 10" square) and large 4" diameter circular hole (12.56 sq in)
@@ -833,7 +833,7 @@ class TestPocketContouring(unittest.TestCase):
     def test_small_through_cut_hole_is_cleared(self):
         """Test that a small hole cutting to sacrifice board is fully cleared"""
         from team_config import TeamConfig
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')
 
         # Outer perimeter and small 0.5" diameter hole (0.196 sq in)
@@ -865,7 +865,7 @@ class TestPocketContouring(unittest.TestCase):
     def test_large_partial_depth_hole_is_cleared(self):
         """Test that a large partial-depth hole is ALWAYS fully cleared (never contoured)"""
         from team_config import TeamConfig
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')
 
         # Outer perimeter and large 4" diameter hole, but only 0.1" deep (partial depth)
@@ -900,7 +900,7 @@ class TestPocketContouring(unittest.TestCase):
     def test_large_through_cut_pocket_is_contoured(self):
         """Test that a large pocket cutting to sacrifice board is contoured"""
         from team_config import TeamConfig
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')
 
         # Outer perimeter (10" × 10") and large rectangular pocket: 4" × 4" = 16 sq in
@@ -930,7 +930,7 @@ class TestPocketContouring(unittest.TestCase):
     def test_small_through_cut_pocket_is_cleared(self):
         """Test that a small pocket cutting to sacrifice board is fully cleared"""
         from team_config import TeamConfig
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')
 
         # Outer perimeter and small rectangular pocket: 0.5" × 0.5" = 0.25 sq in
@@ -961,7 +961,7 @@ class TestPocketContouring(unittest.TestCase):
     def test_large_partial_depth_pocket_is_cleared(self):
         """Test that a large partial-depth pocket is ALWAYS fully cleared"""
         from team_config import TeamConfig
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')
 
         # Outer perimeter and large rectangular pocket: 4" × 4" = 16 sq in, but partial depth
@@ -1001,7 +1001,7 @@ class TestPocketContouring(unittest.TestCase):
         config._data['machines']['default']['machining'] = config._data['machines']['default'].get('machining', {})
         config._data['machines']['default']['machining']['pockets'] = {'contour_threshold': 0}
 
-        pp = FRCPostProcessor(0.25, 0.157, config=config)
+        pp = DumbCAMPostProcessor(0.25, 0.157, config=config)
         pp.apply_material_preset('plywood')
 
         # Outer perimeter and large 4" diameter hole that would normally be contoured
@@ -1033,7 +1033,7 @@ class TestPerimeterWithArcs(unittest.TestCase):
 
     def test_polyline_perimeter_with_holes_and_transform(self):
         """Test typical part: polyline perimeter with circular holes, verify transform doesn't break."""
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')  # Sets max_slotting_depth and other required params
 
         # Rectangle 10"x8" with two circular holes
@@ -1094,7 +1094,7 @@ class TestPerimeterWithArcs(unittest.TestCase):
 
     def test_circle_bounds_with_polyline_perimeter(self):
         """Test that circle radius is properly included in bounds calculation."""
-        pp = FRCPostProcessor(0.25, 0.157)
+        pp = DumbCAMPostProcessor(0.25, 0.157)
         pp.apply_material_preset('plywood')  # Sets required material parameters
 
         # Small rectangle with large hole offset to one side
@@ -1194,7 +1194,7 @@ class TestMultilayerGeometrySubtraction(unittest.TestCase):
 
             # Process with aluminum (threshold = 3.14 sq in, ~2" dia)
             config = TeamConfig()
-            pp = FRCPostProcessor(material_thickness=0.5, tool_diameter=0.157, config=config)
+            pp = DumbCAMPostProcessor(material_thickness=0.5, tool_diameter=0.157, config=config)
             pp.apply_material_preset('aluminum')
             pp.load_dxf(dxf_path)
             pp.transform_coordinates('bottom-left', 0)
@@ -1263,7 +1263,7 @@ class TestMultilayerGeometrySubtraction(unittest.TestCase):
 
             # Process
             config = TeamConfig()
-            pp = FRCPostProcessor(material_thickness=0.5, tool_diameter=0.157, config=config)
+            pp = DumbCAMPostProcessor(material_thickness=0.5, tool_diameter=0.157, config=config)
             pp.apply_material_preset('aluminum')
             pp.load_dxf(dxf_path)
             pp.transform_coordinates('bottom-left', 0)
@@ -1332,7 +1332,7 @@ class TestMultilayerGeometrySubtraction(unittest.TestCase):
 
             # Process
             config = TeamConfig()
-            pp = FRCPostProcessor(material_thickness=0.5, tool_diameter=0.157, config=config)
+            pp = DumbCAMPostProcessor(material_thickness=0.5, tool_diameter=0.157, config=config)
             pp.apply_material_preset('aluminum')
             pp.load_dxf(dxf_path)
             pp.transform_coordinates('bottom-left', 0)
@@ -1442,9 +1442,9 @@ class TestConcentricCircleDepths(unittest.TestCase):
         doc.saveas(filename)
 
     def _make_postprocessor(self):
-        """Create a FRCPostProcessor configured for our 6x6x0.5 plate."""
+        """Create a DumbCAMPostProcessor configured for our 6x6x0.5 plate."""
         config = TeamConfig()
-        pp = FRCPostProcessor(
+        pp = DumbCAMPostProcessor(
             material_thickness=self.PLATE_THICKNESS,
             tool_diameter=self.TOOL_DIAMETER,
             config=config,

@@ -465,7 +465,7 @@ def normalize_to_origin(polylines: list) -> list:
 
     DXF files exported from CAD keep their model-space coordinates, which can be
     anywhere. The mill pipeline normalizes the part to a chosen origin corner
-    (see FRCPostProcessor.transform_coordinates); plasma must do the same so the
+    (see DumbCAMPostProcessor.transform_coordinates); plasma must do the same so the
     G-code lives in the positive quadrant and the toolpath aligns with the stock
     in the viewer. Relative positions between loops are preserved (single shared
     offset).

@@ -1,6 +1,6 @@
 from pygcode import *
 from termcolor import colored
-from dumbcam_postprocessor import FRCPostProcessor
+from dumbcam_postprocessor import DumbCAMPostProcessor
 import argparse
 import io
 import sys
@@ -250,7 +250,7 @@ def generate_gcode_from_dxf(dxf_path, material_thickness=0.25, tool_diameter=0.1
 
     with redirect_stdout(output):
         # Create post-processor with specified parameters
-        pp = FRCPostProcessor(material_thickness=material_thickness,
+        pp = DumbCAMPostProcessor(material_thickness=material_thickness,
                               tool_diameter=tool_diameter,
                               units=units)
 

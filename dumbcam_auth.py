@@ -30,7 +30,7 @@ def log(*args, **kwargs):
     message = ' '.join(str(arg) for arg in args)
     logger.info(message)
 
-class PenguinCAMAuth:
+class DumbCAMAuth:
     """Handles Google OAuth authentication with Drive API access"""
     
     # Scopes we need
@@ -432,4 +432,4 @@ class PenguinCAMAuth:
 
 def init_auth(app):
     """Initialize authentication for the Flask app"""
-    return PenguinCAMAuth(app)
+    return DumbCAMAuth(app)
