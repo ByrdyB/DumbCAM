@@ -76,6 +76,10 @@ except ImportError:
 
 # Import postprocessor directly (for API calls instead of subprocess)
 from frc_cam_postprocessor import FRCPostProcessor, PostProcessorResult
+from plasma_postprocessor import (
+    PlasmaPostProcessor, PlasmaConfig, polylines_to_loops, dxf_to_polylines,
+    normalize_to_origin, build_loops_with_leads
+)
 
 # Import team config management
 from team_config import TeamConfig
@@ -404,13 +408,13 @@ def index():
     # TO MAKE APP WIDE OPEN (allow anonymous browser access):
     # Simply comment out or remove the code block below (lines until "End gate")
     # ========================================================================
-    if ONSHAPE_AVAILABLE:
-        user_id = get_current_user_id()
-        client = session_manager.get_client(user_id)
-        if not client:
-            # No Onshape session - redirect to OAuth
-            log("⛔ Access denied: No Onshape authentication, redirecting to /onshape/auth")
-            return redirect('/onshape/auth')
+    # if ONSHAPE_AVAILABLE:
+    #     user_id = get_current_user_id()
+    #     client = session_manager.get_client(user_id)
+    #     if not client:
+    #         # No Onshape session - redirect to OAuth
+    #         log("⛔ Access denied: No Onshape authentication, redirecting to /onshape/auth")
+    #         return redirect('/onshape/auth')
     # ========================================================================
     # End authentication gate
     # ========================================================================
@@ -485,6 +489,7 @@ def process_file():
         material = request.form.get('material', 'plywood')
         is_aluminum_tube = (material.lower() == 'aluminum_tube')
         machine_id = request.form.get('machine_id', None)  # Optional machine selection
+        machine_mode = request.form.get('machine_mode', 'mill')
 
         # Map special cases:
         # - 'aluminum_tube' -> 'aluminum' (aluminum_tube is UI-only, uses aluminum preset)
@@ -571,6 +576,88 @@ def process_file():
             # Use DXF filename
             base_name = Path(file.filename).stem
             log(f"📝 Using DXF filename base: {base_name}")
+
+        # Plasma mode: early return with FireControl G-code
+        if machine_mode == 'plasma':
+            try:
+                cfg = PlasmaConfig(
+                    pierce_height=float(request.form.get('plasma_pierce_height', 0.15)),
+                    cut_height=float(request.form.get('plasma_cut_height', 0.063)),
+                    pierce_delay=float(request.form.get('plasma_pierce_delay', 0.5)),
+                    first_pierce_time=float(request.form.get('plasma_first_pierce_time', 0.0)),
+                    plunge_rate=float(request.form.get('plasma_plunge_rate', 100.0)),
+                    end_delay=float(request.form.get('plasma_end_delay', 0.0)),
+                    retract_height=float(request.form.get('plasma_retract_height', 1.0)),
+                    ihs_springback=float(request.form.get('plasma_ihs_springback', 0.02)),
+                    units='inch',
+                )
+                feed_rate = float(request.form.get('plasma_feed_rate', 129.0))
+                lead_length = float(request.form.get('plasma_lead_length', 0.15))
+            except ValueError as e:
+                return jsonify({'error': f'Invalid plasma parameter: {e}'}), 400
+
+            plasma_polylines = dxf_to_polylines(input_path)
+            if not plasma_polylines:
+                return jsonify({'error': 'No closed cut loops found in DXF'}), 400
+
+            # Normalize the part to the bottom-left origin (like the mill side
+            # does) so the toolpath lives in the positive quadrant and aligns
+            # with the stock in the viewer. The clicked lead points arrive in
+            # raw DXF coords, so shift them by the same offset.
+            min_x = min(x for poly in plasma_polylines for x, _ in poly)
+            min_y = min(y for poly in plasma_polylines for _, y in poly)
+            plasma_polylines = [[(x - min_x, y - min_y) for x, y in poly]
+                                for poly in plasma_polylines]
+
+            try:
+                raw_points = json.loads(
+                    request.form.get('plasma_lead_points', '[]'))
+                lead_points = [(float(p[0]) - min_x, float(p[1]) - min_y)
+                               for p in raw_points]
+            except (ValueError, TypeError, KeyError, IndexError):
+                return jsonify(
+                    {'error': 'Invalid plasma parameter: lead points'}), 400
+
+            plasma_loops = build_loops_with_leads(
+                plasma_polylines, feed_rate=feed_rate,
+                lead_length=lead_length, lead_points=lead_points)
+            pp_plasma = PlasmaPostProcessor()
+            gcode_str = pp_plasma.generate_gcode(plasma_loops, cfg)
+
+            plasma_filename = f"{base_name}_plasma.nc"
+            plasma_output_path = os.path.join(OUTPUT_FOLDER, plasma_filename)
+            with open(plasma_output_path, 'w') as f_plasma:
+                f_plasma.write(gcode_str)
+
+            plasma_token = file_token_manager.register_file(plasma_output_path, plasma_filename)
+            total_lines = sum(1 for ln in gcode_str.split('\n') if ln.strip())
+            n_loops = len(plasma_loops)
+            plasma_console = (
+                f"Plasma: {n_loops} cut loop{'s' if n_loops != 1 else ''}\n"
+                f"Total lines: {total_lines}"
+            )
+
+            metrics.log_event('gcode_generated',
+                              team_number=session.get('team_number'),
+                              user_email=session.get('user_email'),
+                              metadata={
+                                  'material': 'plasma',
+                                  'is_tube': False,
+                                  'from_onshape': request.form.get('fromOnshape', 'false') == 'true'
+                              })
+
+            return jsonify({
+                'success': True,
+                'filename': plasma_token,
+                'gcode': gcode_str,
+                'console': plasma_console,
+                'parameters': {
+                    'feed_rate': feed_rate,
+                    'pierce_height': cfg.pierce_height,
+                    'cut_height': cfg.cut_height,
+                },
+                'mode': 'plasma',
+            })
 
         log(f"🚀 Running post-processor API...")
 

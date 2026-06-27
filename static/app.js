@@ -8,6 +8,9 @@ const appState = {
     suggestedFilename: null,
     gcodeContent: null,
     outputFilename: null,
+    machineMode: 'mill',      // 'mill' or 'plasma'
+    currentJobMode: 'mill',   // mode of the last successful /process call
+    plasmaLeadPoints: [],     // [{x, y}, ...] attach points in part coords
 
     // 3D Visualization
     scene: null,
@@ -532,24 +535,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('machine_id', machineSelect.value);
             }
 
-            const material = document.getElementById('material').value;
-            formData.append('material', material);
-            formData.append('tool_diameter', document.getElementById('toolDiameter').value);
-            formData.append('origin_corner', 'bottom-left'); // Always bottom-left
+            formData.append('machine_mode', appState.machineMode);
 
-            // Add material-specific parameters
-            if (material === 'aluminum_tube') {
-                // Tube-specific parameters
-                formData.append('thickness', document.getElementById('thickness').value); // Tube wall thickness
-                formData.append('tube_height', document.getElementById('tubeHeight').value);
-                formData.append('square_end', document.getElementById('squareEnd').checked ? '1' : '0');
-                formData.append('cut_to_length', document.getElementById('cutToLength').checked ? '1' : '0');
+            if (appState.machineMode === 'plasma') {
+                // Plasma mode: send torch parameters only
+                formData.append('plasma_feed_rate', document.getElementById('plasmaFeedRate').value);
+                formData.append('plasma_pierce_height', document.getElementById('plasmaPierceHeight').value);
+                formData.append('plasma_cut_height', document.getElementById('plasmaCutHeight').value);
+                formData.append('plasma_pierce_delay', document.getElementById('plasmaPierceDelay').value);
+                formData.append('plasma_first_pierce_time', document.getElementById('plasmaFirstPierceTime').value);
+                formData.append('plasma_plunge_rate', document.getElementById('plasmaPlungeRate').value);
+                formData.append('plasma_end_delay', document.getElementById('plasmaEndDelay').value);
+                formData.append('plasma_retract_height', document.getElementById('plasmaRetractHeight').value);
+                formData.append('plasma_ihs_springback', document.getElementById('plasmaIhsSpringback').value);
+                formData.append('plasma_lead_length', document.getElementById('plasmaLeadLength').value);
+                formData.append('plasma_lead_points', JSON.stringify(
+                    (appState.plasmaLeadPoints || []).map(p => [p.x, p.y])));
             } else {
-                // Standard parameters
-                formData.append('thickness', document.getElementById('thickness').value);
-                formData.append('tab_spacing', document.getElementById('tabSpacing').value);
+                // Mill mode: send existing parameters
+                const material = document.getElementById('material').value;
+                formData.append('material', material);
+                formData.append('tool_diameter', document.getElementById('toolDiameter').value);
+                formData.append('origin_corner', 'bottom-left'); // Always bottom-left
+
+                if (material === 'aluminum_tube') {
+                    formData.append('thickness', document.getElementById('thickness').value);
+                    formData.append('tube_height', document.getElementById('tubeHeight').value);
+                    formData.append('square_end', document.getElementById('squareEnd').checked ? '1' : '0');
+                    formData.append('cut_to_length', document.getElementById('cutToLength').checked ? '1' : '0');
+                } else {
+                    formData.append('thickness', document.getElementById('thickness').value);
+                    formData.append('tab_spacing', document.getElementById('tabSpacing').value);
+                }
+                formData.append('rotation', rotationAngle);
             }
-            formData.append('rotation', rotationAngle); // Add rotation angle
             if (appState.suggestedFilename) {
                 formData.append('suggested_filename', appState.suggestedFilename); // Onshape filename
             }
@@ -575,6 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 appState.gcodeContent = data.gcode;
                 appState.outputFilename = data.filename;
+                appState.currentJobMode = data.mode || 'mill';
 
                 // Show results
                 showResults(data);
@@ -746,18 +766,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Extract key info
-            const holesMatch = data.console.match(/(\d+) millable holes/);
-            const pocketsMatch = data.console.match(/and (\d+) pockets/);
-            const linesMatch = data.console.match(/Total lines: (\d+)/);
-
-            if (holesMatch) {
-                statsHtml.push(`<div class="stat"><div class="stat-label">Holes</div><div class="stat-value">${holesMatch[1]}</div></div>`);
-            }
-            if (pocketsMatch) {
-                statsHtml.push(`<div class="stat"><div class="stat-label">Pockets</div><div class="stat-value">${pocketsMatch[1]}</div></div>`);
-            }
-            if (linesMatch) {
-                statsHtml.push(`<div class="stat"><div class="stat-label">G-code Lines</div><div class="stat-value">${linesMatch[1]}</div></div>`);
+            if (data.mode === 'plasma') {
+                const loopsMatch = data.console.match(/Plasma: (\d+) cut loop/);
+                const linesMatch = data.console.match(/Total lines: (\d+)/);
+                if (loopsMatch) {
+                    statsHtml.push(`<div class="stat"><div class="stat-label">Cut Loops</div><div class="stat-value">${loopsMatch[1]}</div></div>`);
+                }
+                if (linesMatch) {
+                    statsHtml.push(`<div class="stat"><div class="stat-label">G-code Lines</div><div class="stat-value">${linesMatch[1]}</div></div>`);
+                }
+            } else {
+                const holesMatch = data.console.match(/(\d+) millable holes/);
+                const pocketsMatch = data.console.match(/and (\d+) pockets/);
+                const linesMatch = data.console.match(/Total lines: (\d+)/);
+                if (holesMatch) {
+                    statsHtml.push(`<div class="stat"><div class="stat-label">Holes</div><div class="stat-value">${holesMatch[1]}</div></div>`);
+                }
+                if (pocketsMatch) {
+                    statsHtml.push(`<div class="stat"><div class="stat-label">Pockets</div><div class="stat-value">${pocketsMatch[1]}</div></div>`);
+                }
+                if (linesMatch) {
+                    statsHtml.push(`<div class="stat"><div class="stat-label">G-code Lines</div><div class="stat-value">${linesMatch[1]}</div></div>`);
+                }
             }
 
             stats.innerHTML = statsHtml.join('');
@@ -867,6 +897,77 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.mode-button').forEach(btn => {
                 btn.addEventListener('click', () => switchMode(btn.dataset.mode));
             });
+
+            // Plasma lead placement: click the part to drop/move/remove an
+            // attach dot. Only active in plasma mode.
+            dxfCanvas2D.addEventListener('click', (ev) => {
+                if (appState.machineMode !== 'plasma' || !dxfGeometry) return;
+                const part = canvasToPart(ev.clientX, ev.clientY);
+                if (!part) return;
+                const snap = nearestContourPoint(part.x, part.y) || part;
+                appState.plasmaLeadPoints = appState.plasmaLeadPoints || [];
+                const threshold = 10 / appState.dxfTransform.scale; // ~10px
+                const idx = appState.plasmaLeadPoints.findIndex(
+                    p => Math.hypot(p.x - snap.x, p.y - snap.y) < threshold);
+                if (idx >= 0) {
+                    appState.plasmaLeadPoints.splice(idx, 1); // toggle off
+                } else {
+                    appState.plasmaLeadPoints.push(snap);
+                }
+                renderDxfSetup();
+            });
+        }
+
+        // --- Plasma lead placement helpers -----------------------------
+        function canvasToPart(clientX, clientY) {
+            const t = appState.dxfTransform;
+            if (!t) return null;
+            const rect = dxfCanvas2D.getBoundingClientRect();
+            const px = (clientX - rect.left) * (dxfCanvas2D.width / rect.width);
+            const py = (clientY - rect.top) * (dxfCanvas2D.height / rect.height);
+            // invert toCanvasCoords (no rotation in plasma mode):
+            //   px = t.centerX + (x - boundsCenterX) * scale
+            //   py = t.centerY - (y - boundsCenterY) * scale
+            return {
+                x: (px - t.centerX) / t.scale + t.boundsCenterX,
+                y: (t.centerY - py) / t.scale + t.boundsCenterY,
+            };
+        }
+
+        function nearestContourPoint(x, y) {
+            if (!dxfGeometry || !dxfGeometry.entities) return null;
+            let best = null, bestD = Infinity;
+            const consider = (vx, vy) => {
+                const d = Math.hypot(vx - x, vy - y);
+                if (d < bestD) { bestD = d; best = { x: vx, y: vy }; }
+            };
+            dxfGeometry.entities.forEach(e => {
+                switch (e.type) {
+                    case 'LINE':
+                    case 'LWPOLYLINE':
+                    case 'POLYLINE':
+                        (e.vertices || []).forEach(v => consider(v.x, v.y));
+                        break;
+                    case 'CIRCLE':
+                        for (let k = 0; k < 32; k++) {
+                            const a = 2 * Math.PI * k / 32;
+                            consider(e.center.x + e.radius * Math.cos(a),
+                                     e.center.y + e.radius * Math.sin(a));
+                        }
+                        break;
+                    case 'ARC': {
+                        const s = e.startAngle * Math.PI / 180;
+                        const en = e.endAngle * Math.PI / 180;
+                        for (let k = 0; k <= 8; k++) {
+                            const a = s + (en - s) * k / 8;
+                            consider(e.center.x + e.radius * Math.cos(a),
+                                     e.center.y + e.radius * Math.sin(a));
+                        }
+                        break;
+                    }
+                }
+            });
+            return best;
         }
 
         /**
@@ -1338,6 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 centerX: (minX + maxX) / 2,
                 centerY: (minY + maxY) / 2
             };
+            appState.plasmaLeadPoints = []; // clear lead dots for the new part
 
             // Update form visibility based on detected layers (2D vs 2.5D)
             updateFormVisibility();
@@ -1426,6 +1528,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Center position (no rotation of entire canvas)
             const centerX = width / 2;
             const centerY = height / 2;
+
+            // Save the forward transform so canvas clicks can be inverted.
+            // (rotationAngle is 0 in plasma mode, so rotation is ignored.)
+            appState.dxfTransform = {
+                scale: scale,
+                centerX: centerX,
+                centerY: centerY,
+                boundsCenterX: dxfBounds.centerX,
+                boundsCenterY: dxfBounds.centerY,
+            };
             
             // Helper functions to transform coordinates
             function rotatePoint(x, y, angle) {
@@ -1653,6 +1765,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     width / 2,
                     40
                 );
+            }
+
+            // Plasma lead attach markers
+            if (appState.machineMode === 'plasma' && appState.plasmaLeadPoints) {
+                ctx.fillStyle = '#ffa500';
+                appState.plasmaLeadPoints.forEach(p => {
+                    const c = toCanvasCoords(p.x, p.y);
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
             }
         }
 
@@ -2000,14 +2123,114 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        function visualizeGcode(gcode) {
-            // Parse G-code into moves
-            const lines = gcode.split('\n');
-            toolpathMoves = [];
-            let currentX = 0, currentY = 0, currentZ = 0;
+        function parsePlasmaGcodeIntoMoves(lines) {
+            // Parse plasma G-code into toolpath moves.
+            // Tracks H1/H0 for torch-on/off; skips all Z moves (IHS setup).
+            const moves = [];
+            let currentX = 0, currentY = 0;
+            let torchOn = false;
             let minX = Infinity, maxX = -Infinity;
             let minY = Infinity, maxY = -Infinity;
-            let minZ = Infinity, maxZ = -Infinity;
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('(') || trimmed.startsWith(';')) continue;
+
+                if (trimmed === 'H1') { torchOn = true; continue; }
+                if (trimmed === 'H0') { torchOn = false; continue; }
+
+                // Skip IHS Z moves (any G-code line containing a Z word)
+                if (/Z[-\d.]/.test(trimmed)) continue;
+
+                const gMatch = trimmed.match(/^(G[0-3])/);
+                if (!gMatch) continue;
+
+                const moveType = gMatch[1];
+                const xMatch = trimmed.match(/X([-\d.]+)/);
+                const yMatch = trimmed.match(/Y([-\d.]+)/);
+                const newX = xMatch ? parseFloat(xMatch[1]) : currentX;
+                const newY = yMatch ? parseFloat(yMatch[1]) : currentY;
+
+                if (moveType === 'G2' || moveType === 'G3') {
+                    const iMatch = trimmed.match(/I([-\d.]+)/);
+                    const jMatch = trimmed.match(/J([-\d.]+)/);
+                    if (iMatch && jMatch) {
+                        const arcI = parseFloat(iMatch[1]);
+                        const arcJ = parseFloat(jMatch[1]);
+                        const centerX = currentX + arcI;
+                        const centerY = currentY + arcJ;
+                        const startAngle = Math.atan2(currentY - centerY, currentX - centerX);
+                        const endAngle = Math.atan2(newY - centerY, newX - centerX);
+                        const radius = Math.sqrt(arcI * arcI + arcJ * arcJ);
+                        let sweepAngle = endAngle - startAngle;
+                        const isClockwise = (moveType === 'G2');
+                        if (isClockwise) {
+                            if (sweepAngle > 0) sweepAngle -= 2 * Math.PI;
+                            if (Math.abs(sweepAngle) < 0.001) sweepAngle = -2 * Math.PI;
+                        } else {
+                            if (sweepAngle < 0) sweepAngle += 2 * Math.PI;
+                            if (Math.abs(sweepAngle) < 0.001) sweepAngle = 2 * Math.PI;
+                        }
+                        const numSegments = Math.max(8, Math.ceil(Math.abs(sweepAngle) * radius * 10));
+                        for (let i = 0; i < numSegments; i++) {
+                            const t = (i + 1) / numSegments;
+                            const angle = startAngle + sweepAngle * t;
+                            const arcX = centerX + radius * Math.cos(angle);
+                            const arcY = centerY + radius * Math.sin(angle);
+                            moves.push({
+                                type: torchOn ? 'G1' : 'G0',
+                                isPlasmaCut: torchOn,
+                                from: { x: currentX, y: currentY, z: 0 },
+                                to: { x: arcX, y: arcY, z: 0 },
+                                line: trimmed
+                            });
+                            minX = Math.min(minX, arcX); maxX = Math.max(maxX, arcX);
+                            minY = Math.min(minY, arcY); maxY = Math.max(maxY, arcY);
+                            currentX = arcX;
+                            currentY = arcY;
+                        }
+                        continue;
+                    }
+                }
+
+                if (newX === currentX && newY === currentY) continue;
+
+                moves.push({
+                    type: torchOn ? 'G1' : 'G0',
+                    isPlasmaCut: torchOn,
+                    from: { x: currentX, y: currentY, z: 0 },
+                    to: { x: newX, y: newY, z: 0 },
+                    line: trimmed
+                });
+
+                minX = Math.min(minX, newX); maxX = Math.max(maxX, newX);
+                minY = Math.min(minY, newY); maxY = Math.max(maxY, newY);
+                currentX = newX;
+                currentY = newY;
+            }
+
+            return { moves, minX, maxX, minY, maxY };
+        }
+
+        function visualizeGcode(gcode) {
+            const lines = gcode.split('\n');
+            toolpathMoves = [];
+            const isPlasma = (appState.currentJobMode === 'plasma');
+
+            let minX, maxX, minY, maxY, minZ = 0, maxZ = 0;
+
+            if (isPlasma) {
+                // Plasma: flat 2D parse — ignore Z, track torch on/off
+                const parsed = parsePlasmaGcodeIntoMoves(lines);
+                toolpathMoves = parsed.moves;
+                minX = parsed.minX; maxX = parsed.maxX;
+                minY = parsed.minY; maxY = parsed.maxY;
+            } else {
+            // Mill: existing 3D parse (indented block begins here)
+            let currentX = 0, currentY = 0, currentZ = 0;
+            minX = Infinity; maxX = -Infinity;
+            minY = Infinity; maxY = -Infinity;
+            minZ = Infinity; maxZ = -Infinity;
 
             for (const line of lines) {
                 const trimmed = line.trim();
@@ -2138,6 +2361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Arc parsing complete. Total moves:', toolpathMoves.length);
             console.log('Bounds:', { minX, maxX, minY, maxY, minZ, maxZ });
             console.log('First 5 moves:', toolpathMoves.slice(0, 5));
+            } // end else (mill parse)
 
             if (toolpathMoves.length === 0) return;
 
@@ -2176,18 +2400,17 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             scene.add(originMarker);
 
-            // Get actual material thickness for visualization
-            const material = document.getElementById('material').value;
-            const isAluminumTube = (material === 'aluminum_tube');
-            const materialThickness = parseFloat(document.getElementById('thickness').value);
+            // Get material thickness for stock visualization
+            const isAluminumTube = !isPlasma && document.getElementById('material').value === 'aluminum_tube';
+            const materialThickness = isPlasma
+                ? 0.1  // nominal thin sheet for plasma visualization
+                : parseFloat(document.getElementById('thickness').value);
 
-            // Store for toolpath starting position
             toolpathStockHeight = materialThickness;
 
-            // For tube mode, use tube height as stock height instead of wall thickness
-            const stockHeightValue = isAluminumTube ?
-                parseFloat(document.getElementById('tubeHeight').value) :
-                materialThickness;
+            const stockHeightValue = isAluminumTube
+                ? parseFloat(document.getElementById('tubeHeight').value)
+                : materialThickness;
 
             // Material boundaries (at material top surface)
             // Translate so lower-left is at origin (to match DXF render)
@@ -2313,23 +2536,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderDxfGeometry(scene, dxfGeometry.entities, stockHeight);
             }
 
-            // Create tool representation (endmill)
+            // Create tool representation (endmill — not applicable for plasma)
+            if (!isPlasma) {
             const toolLength = Math.max(maxZ * 1.5, 1.0);
             const toolGeometry = new THREE.CylinderGeometry(
-                toolDiameter / 2, 
-                toolDiameter / 2, 
-                toolLength, 
+                toolDiameter / 2,
+                toolDiameter / 2,
+                toolLength,
                 16
             );
             const toolMaterial = new THREE.MeshStandardMaterial({
-                color: 0xC0C0C0, // Silver
+                color: 0xC0C0C0,
                 metalness: 0.8,
                 roughness: 0.2,
                 emissive: 0x404040
             });
             toolMesh = new THREE.Mesh(toolGeometry, toolMaterial);
-            toolMesh.userData.toolLength = toolLength; // Store for positioning
+            toolMesh.userData.toolLength = toolLength;
             scene.add(toolMesh);
+            } // end if (!isPlasma)
 
             // Initialize toolpath lines
             updateToolpathDisplay(0);
@@ -2451,7 +2676,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 `Move ${moveIndex + 1} of ${toolpathMoves.length}`;
             
             const currentMove = toolpathMoves[moveIndex];
-            const moveType = currentMove.type === 'G0' ? 'Rapid' : 'Cut';
+            const moveType = (currentMove.isPlasmaCut !== undefined)
+                ? (currentMove.isPlasmaCut ? 'Torch On' : 'Rapid')
+                : (currentMove.type === 'G0' ? 'Rapid' : 'Cut');
             document.getElementById('scrubberOperation').textContent =
                 `${moveType}: ${currentMove.line}`;
 
@@ -2653,6 +2880,34 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
             }
+
+            // Machine mode toggle
+            const millRadio = document.getElementById('modeMill');
+            const plasmaRadio = document.getElementById('modePlasma');
+
+            function applyMachineMode(mode) {
+                appState.machineMode = mode;
+                const isPlasma = (mode === 'plasma');
+
+                const millIds = [
+                    'millMaterialGroup', 'millThicknessGroup',
+                    'millTabGroup', 'millDivider', 'millToolGroup', 'tubeParams'
+                ];
+                millIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = isPlasma ? 'none' : '';
+                });
+
+                const plasmaPanel = document.getElementById('plasmaParams');
+                if (plasmaPanel) plasmaPanel.style.display = isPlasma ? 'block' : 'none';
+
+                // Rotation controls are meaningless in plasma mode (DXF is pre-oriented)
+                const rotateBtn = document.getElementById('rotateBtn');
+                if (rotateBtn) rotateBtn.style.display = isPlasma ? 'none' : '';
+            }
+
+            if (millRadio) millRadio.addEventListener('change', () => applyMachineMode('mill'));
+            if (plasmaRadio) plasmaRadio.addEventListener('change', () => applyMachineMode('plasma'));
         });
 
         // Handle window resize

@@ -139,6 +139,21 @@
                     </div>
 
                     <form id="paramForm">
+                        <!-- Machine Mode Toggle -->
+                        <div class="param-group" id="machineModeGroup">
+                            <label>Machine Mode</label>
+                            <div style="display: flex; gap: 1.5rem; margin-top: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="machineMode" value="mill" id="modeMill" checked>
+                                    <span>Router (Mill)</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="radio" name="machineMode" value="plasma" id="modePlasma">
+                                    <span>Plasma (FireControl)</span>
+                                </label>
+                            </div>
+                        </div>
+
                         {% if machines|length > 1 %}
                         <div class="param-group">
                             <label>
@@ -156,7 +171,7 @@
                         </div>
                         {% endif %}
 
-                        <div class="param-group">
+                        <div class="param-group" id="millMaterialGroup">
                             <label>
                                 Material Type
                                 <span class="label-hint">Cutting parameters preset</span>
@@ -175,7 +190,7 @@
                             </div>
                         </div>
 
-                        <div class="param-group">
+                        <div class="param-group" id="millThicknessGroup">
                             <label>
                                 Material Thickness (inches)
                                 <span class="label-hint">{% if detected_thickness %}Auto-detected from CAD{% else %}1/4" = 0.25{% endif %}</span>
@@ -188,7 +203,7 @@
                             {% endif %}
                         </div>
 
-                        <div class="param-group" style="display: none;">
+                        <div class="param-group" id="millTabGroup" style="display: none;">
                             <label>
                                 Tab Spacing (inches)
                                 <span class="label-hint">Distance between tabs (min 3 tabs)</span>
@@ -222,9 +237,76 @@
                         </div>
 
                         <!-- Divider between material and tool parameters -->
-                        <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin: 1.5rem 0;"></div>
+                        <div id="millDivider" style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin: 1.5rem 0;"></div>
 
-                        <div class="param-group">
+                        <!-- Plasma Parameters (shown only in plasma mode) -->
+                        <div id="plasmaParams" style="display: none;">
+                            <div class="param-group">
+                                <label>Feed Rate (IPM)
+                                    <span class="label-hint">Cutting speed</span>
+                                </label>
+                                <input type="number" id="plasmaFeedRate" step="1" value="129" min="1" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>Pierce Height (in)
+                                    <span class="label-hint">Z height when arc starts</span>
+                                </label>
+                                <input type="number" id="plasmaPierceHeight" step="0.001" value="0.15" min="0" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>Cut Height (in)
+                                    <span class="label-hint">THC target height</span>
+                                </label>
+                                <input type="number" id="plasmaCutHeight" step="0.001" value="0.063" min="0" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>Pierce Delay (s)
+                                    <span class="label-hint">Dwell after torch fires</span>
+                                </label>
+                                <input type="number" id="plasmaPierceDelay" step="0.1" value="0.5" min="0" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>First Pierce Time (s)
+                                    <span class="label-hint">Added to first pierce only</span>
+                                </label>
+                                <input type="number" id="plasmaFirstPierceTime" step="0.1" value="0.0" min="0" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>Plunge Rate (IPM)
+                                    <span class="label-hint">Z descent to cut height</span>
+                                </label>
+                                <input type="number" id="plasmaPlungeRate" step="1" value="100" min="1" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>End Delay (s)
+                                    <span class="label-hint">Dwell before retract</span>
+                                </label>
+                                <input type="number" id="plasmaEndDelay" step="0.1" value="0.0" min="0" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>Retract Height (in)
+                                    <span class="label-hint">Z height between cuts</span>
+                                </label>
+                                <input type="number" id="plasmaRetractHeight" step="0.1" value="1.0" min="0.1" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>IHS Springback (in)
+                                    <span class="label-hint">Built-in spring compensation</span>
+                                </label>
+                                <input type="number" id="plasmaIhsSpringback" step="0.001" value="0.02" min="0" autocomplete="off">
+                            </div>
+                            <div class="param-group">
+                                <label>Lead Length (in)
+                                    <span class="label-hint">Length of lead-in/out; 0 = pierce on edge. Click the part to place.</span>
+                                </label>
+                                <input type="number" id="plasmaLeadLength" step="0.01" value="0.15" min="0" autocomplete="off">
+                            </div>
+                            <div style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.05); border-left: 3px solid rgba(255,255,255,0.2); font-size: 0.8rem; color: var(--text-dim);">
+                                Set Pierce Height and Cut Height to 0 to disable IHS and THC.
+                            </div>
+                        </div>
+
+                        <div class="param-group" id="millToolGroup">
                             <label>
                                 Tool Diameter (inches)
                                 <span class="label-hint">4mm = 0.157"</span>
