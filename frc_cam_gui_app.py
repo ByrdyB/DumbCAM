@@ -2174,11 +2174,11 @@ if not IS_SERVERLESS:
     atexit.register(cleanup)
 
 if __name__ == '__main__':
-    # Get port from environment variable (Railway) or default to 6238 for local dev
-    port = int(os.environ.get('PORT', 6238))
-    
+    # Get port from environment variable or default to 8080 for local dev
+    port = int(os.environ.get('PORT', 8080))
+
     log("="*70)
-    log("PenguinCAM - FRC Team 6238")
+    log("DumbCAM")
     log("="*70)
     log(f"\nPost-processor script: {POST_PROCESSOR}")
     log(f"Temporary directory: {TEMP_DIR}")

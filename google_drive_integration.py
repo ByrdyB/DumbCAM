@@ -64,7 +64,7 @@ class GoogleDriveUploader:
         folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID') or os.environ.get('DRIVE_FOLDER_ID')
 
         return {
-            'shared_drive_name': os.environ.get('DRIVE_NAME', 'Popcorn Penguins'),
+            'shared_drive_name': os.environ.get('DRIVE_NAME', 'DumbCAM'),
             'folder_path': os.environ.get('DRIVE_FOLDER', 'CNC/G-code'),
             'folder_id': folder_id
         }
@@ -191,7 +191,7 @@ class GoogleDriveUploader:
                 }
         
         # Find or set up the shared drive and folder
-        drive_name = self.config.get('shared_drive_name', 'Popcorn Penguins')
+        drive_name = self.config.get('shared_drive_name', 'DumbCAM')
         drive_id = self.find_shared_drive(drive_name)
         
         if not drive_id:

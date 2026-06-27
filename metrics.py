@@ -1,5 +1,5 @@
 """
-Simple metrics logging for PenguinCAM using SQLite.
+Simple metrics logging for DumbCAM using SQLite.
 
 Design philosophy:
 - Fails silently if database is unavailable
@@ -97,12 +97,12 @@ def log_event(event_type: str,
 
     Args:
         event_type: Type of event (e.g., 'onshape_import', 'gcode_generated')
-        team_number: FRC team number if applicable
+        team_number: Team number if applicable
         user_email: User email if available
         metadata: Additional data to store as JSON
 
     Example:
-        log_event('gcode_generated', team_number=6238, metadata={'material': 'aluminum'})
+        log_event('gcode_generated', metadata={'material': 'aluminum'})
     """
     # Fire and forget - don't wait for database write
     thread = threading.Thread(

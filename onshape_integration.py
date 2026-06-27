@@ -67,7 +67,7 @@ class OnshapeClient:
         # Set defaults for other fields if not present
         if 'redirect_uri' not in config:
             # Determine base URL from environment or default to localhost
-            base_url = os.environ.get('BASE_URL', 'http://localhost:6238')
+            base_url = os.environ.get('BASE_URL', 'http://localhost:8080')
             config['redirect_uri'] = f"{base_url}/onshape/oauth/callback"
         
         if 'scopes' not in config:

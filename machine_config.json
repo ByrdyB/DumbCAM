@@ -10,10 +10,6 @@
       "units": "inches"
     }
   },
-  "team": {
-    "number": 6238,
-    "name": "Popcorn Penguins"
-  },
   "safety": {
     "note": "Always verify Z-zero before running program"
   }

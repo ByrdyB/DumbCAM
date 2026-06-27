@@ -72,7 +72,7 @@ class PenguinCAMAuth:
         config['google_client_secret'] = os.environ.get('GOOGLE_CLIENT_SECRET')
         
         # Base URL for redirects
-        config['base_url'] = os.environ.get('BASE_URL', 'http://localhost:6238')
+        config['base_url'] = os.environ.get('BASE_URL', 'http://localhost:8080')
         
         # Allowed domains/emails
         env_domains = os.environ.get('ALLOWED_DOMAINS', '')

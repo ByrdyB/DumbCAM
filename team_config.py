@@ -1,8 +1,8 @@
 """
-Team Configuration Management for PenguinCAM
+Team Configuration Management for DumbCAM
 
 Handles loading and managing team-specific settings from YAML config files
-stored in Onshape documents. Falls back to Team 6238 defaults if config
+stored in Onshape documents. Falls back to DumbCAM defaults if config
 is missing or incomplete.
 """
 
@@ -11,15 +11,11 @@ from typing import Optional, Dict, Any
 
 
 # =============================================================================
-# TEAM 6238 DEFAULTS
+# DUMBCAM DEFAULTS
 # These are used as fallbacks when config values are missing
 # =============================================================================
 
-TEAM_6238_DEFAULTS = {
-    'team': {
-        'number': 6238,
-        'name': 'Popcorn Penguins'
-    },
+DUMBCAM_DEFAULTS = {
     'machine': {
         'name': 'Generic CNC Router',
         'manufacturer': 'Generic',
@@ -212,10 +208,10 @@ class TeamConfig:
 
         Args:
             *keys: Path to nested value (e.g., 'machine', 'park_position', 'x')
-            default: Optional override default (otherwise uses TEAM_6238_DEFAULTS)
+            default: Optional override default (otherwise uses DUMBCAM_DEFAULTS)
 
         Returns:
-            Value from config, or from TEAM_6238_DEFAULTS, or provided default
+            Value from config, or from DUMBCAM_DEFAULTS, or provided default
         """
         # Special case: 'team' is at root level in v2 configs, not in machine config
         if keys and keys[0] == 'team':
@@ -251,7 +247,7 @@ class TeamConfig:
             return value
 
         # Fall back to Team 6238 defaults
-        default_value = TEAM_6238_DEFAULTS
+        default_value = DUMBCAM_DEFAULTS
         for key in keys:
             if isinstance(default_value, dict):
                 default_value = default_value.get(key)
@@ -261,7 +257,7 @@ class TeamConfig:
                 default_value = None
                 break
 
-        # Return default_value from TEAM_6238_DEFAULTS, or provided default
+        # Return default_value from DUMBCAM_DEFAULTS, or provided default
         return default_value if default_value is not None else default
 
     # ========================================================================
@@ -460,7 +456,7 @@ class TeamConfig:
         machine_config = self.get_machine_config(machine_id)
 
         # Start with Team 6238 defaults
-        materials = dict(TEAM_6238_DEFAULTS['materials'])
+        materials = dict(DUMBCAM_DEFAULTS['materials'])
 
         # Add/override with machine-specific materials
         machine_materials = machine_config.get('materials', {})
@@ -490,7 +486,7 @@ class TeamConfig:
         }
 
         # Check if material exists in defaults
-        if material in TEAM_6238_DEFAULTS['materials']:
+        if material in DUMBCAM_DEFAULTS['materials']:
             return True
 
         # Check if machine config has all required parameters
@@ -515,11 +511,11 @@ class TeamConfig:
         machine_material = machine_config.get('materials', {}).get(material, {})
 
         # Get Team 6238 default for this material
-        default_preset = TEAM_6238_DEFAULTS['materials'].get(material, {})
+        default_preset = DUMBCAM_DEFAULTS['materials'].get(material, {})
 
         # If no default found, use plywood as universal fallback
         if not default_preset:
-            default_preset = TEAM_6238_DEFAULTS['materials']['plywood'].copy()
+            default_preset = DUMBCAM_DEFAULTS['materials']['plywood'].copy()
             # Use custom name if provided, otherwise capitalize the material ID
             if 'name' not in machine_material:
                 machine_material = {**machine_material, 'name': material.replace('_', ' ').title()}
@@ -587,9 +583,9 @@ class TeamConfig:
                 else:
                     value = None
                     break
-            # Fallback to TEAM_6238_DEFAULTS if not in machine config
+            # Fallback to DUMBCAM_DEFAULTS if not in machine config
             if value is None:
-                fallback = TEAM_6238_DEFAULTS
+                fallback = DUMBCAM_DEFAULTS
                 for key in keys:
                     if isinstance(fallback, dict):
                         fallback = fallback.get(key)
@@ -654,18 +650,11 @@ class TeamConfig:
 # YAML TEMPLATE
 # =============================================================================
 
-CONFIG_TEMPLATE = """# PenguinCAM Team Configuration
+CONFIG_TEMPLATE = """# DumbCAM Configuration
 # This file defines machine-specific settings and machining preferences
 #
-# All values are optional - any missing values will use Team 6238 defaults.
+# All values are optional - any missing values will use DumbCAM defaults.
 # You only need to specify values you want to override.
-
-# =============================================================================
-# TEAM INFORMATION
-# =============================================================================
-team:
-  number: 6238
-  name: "Popcorn Penguins"
 
 # =============================================================================
 # MACHINE & CONTROLLER
