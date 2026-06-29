@@ -438,6 +438,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // File upload handling
         dropZone.addEventListener('click', () => fileInput.click());
 
+        // Toolbar Upload button triggers the same file picker
+        const uploadToolBtn = document.getElementById('uploadToolBtn');
+        if (uploadToolBtn) uploadToolBtn.addEventListener('click', () => fileInput.click());
+
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -599,9 +603,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Show results
                 showResults(data);
 
-                // Switch to preview mode and visualize G-code
-                switchMode('preview');
+                // Switch to the Toolpath tab and visualize G-code
+                selectTab('toolpath');
                 visualizeGcode(data.gcode);
+                renderGcodePanel(); // keep the G-code text overlay in sync
 
                 // Enable download button
                 downloadBtn.disabled = false;
@@ -720,6 +725,8 @@ document.addEventListener('DOMContentLoaded', () => {
         function showLoading() {
             loading.classList.add('show');
             generateBtn.disabled = true;
+            const outputEmpty = document.getElementById('outputEmpty');
+            if (outputEmpty) outputEmpty.style.display = 'none';
         }
 
         function hideLoading() {
@@ -863,7 +870,121 @@ document.addEventListener('DOMContentLoaded', () => {
                     stockSizeDisplay.style.display = 'flex';
                 }
                 // Scrubber visibility handled by visualizeGcode
+
+                // The 3D renderer was initialized while the preview container was
+                // hidden (0x0). Resize it now that the container is visible.
+                if (renderer && camera) {
+                    setTimeout(() => {
+                        const c = document.getElementById('canvas-container');
+                        if (c && c.clientWidth > 0 && c.clientHeight > 0) {
+                            camera.aspect = c.clientWidth / c.clientHeight;
+                            camera.updateProjectionMatrix();
+                            renderer.setSize(c.clientWidth, c.clientHeight);
+                        }
+                    }, 0);
+                }
             }
+        }
+
+        // Bottom-tab navigation (Setup DXF / Toolpath / G-code).
+        // Setup -> 2D DXF view; Toolpath/G-code -> 3D preview. The G-code tab
+        // additionally shows the generated program text overlay.
+        function selectTab(tab) {
+            document.querySelectorAll('.dc-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+
+            if (tab === 'setup') {
+                switchMode('setup');
+                showGcodePanel(false);
+            } else if (tab === 'toolpath') {
+                switchMode('preview');
+                showGcodePanel(false);
+            } else if (tab === 'gcode') {
+                switchMode('preview');
+                showGcodePanel(true);
+            }
+
+            const statusEl = document.getElementById('statusText');
+            if (statusEl) {
+                statusEl.textContent = ({
+                    setup: 'Orienting part',
+                    toolpath: 'Toolpath ready',
+                    gcode: 'Program generated'
+                })[tab] || 'Ready';
+            }
+        }
+
+        function showGcodePanel(show) {
+            const panel = document.getElementById('gcodePanel');
+            if (!panel) return;
+            panel.style.display = show ? 'flex' : 'none';
+            if (show) renderGcodePanel();
+        }
+
+        function gcodeLineClass(line) {
+            const t = line.trim();
+            if (t.startsWith('(') || t.startsWith(';')) return 'cmt';
+            if (/^G0?0\b/.test(t)) return 'rapid';
+            if (/^M\d/.test(t)) return 'm';
+            if (/^G0?[123]\b/.test(t)) return 'cut';
+            return '';
+        }
+
+        function renderGcodePanel() {
+            const body = document.getElementById('gcodePanelBody');
+            if (!body) return;
+            const nameEl = document.getElementById('gcodePanelName');
+            const countEl = document.getElementById('gcodePanelCount');
+
+            const gcode = appState.gcodeContent || '';
+            const allLines = gcode ? gcode.split('\n') : [];
+            if (nameEl) {
+                // Prefer a friendly name derived from the uploaded/suggested file
+                // rather than the server-side token in appState.outputFilename.
+                const base = (appState.suggestedFilename ||
+                    (appState.uploadedFile && appState.uploadedFile.name) ||
+                    'program').replace(/\.dxf$/i, '');
+                const ext = appState.currentJobMode === 'plasma' ? '.tap' : '.nc';
+                nameEl.textContent = base + ext;
+            }
+            if (countEl) countEl.textContent = allLines.length + ' lines';
+
+            // Cap rendered nodes for very large programs to keep the UI responsive.
+            const MAX = 5000;
+            const lines = allLines.slice(0, MAX);
+
+            body.innerHTML = '';
+            if (!gcode) {
+                const empty = document.createElement('div');
+                empty.className = 'gcode-line';
+                empty.innerHTML = '<span class="lt cmt">(Generate a program to view G-code)</span>';
+                body.appendChild(empty);
+                return;
+            }
+
+            const frag = document.createDocumentFragment();
+            lines.forEach((line, i) => {
+                const row = document.createElement('div');
+                row.className = 'gcode-line';
+                const ln = document.createElement('span');
+                ln.className = 'ln';
+                ln.textContent = String(i + 1);
+                const lt = document.createElement('span');
+                lt.className = 'lt ' + gcodeLineClass(line);
+                lt.textContent = line;
+                row.appendChild(ln);
+                row.appendChild(lt);
+                frag.appendChild(row);
+            });
+            if (allLines.length > MAX) {
+                const more = document.createElement('div');
+                more.className = 'gcode-line';
+                more.innerHTML = '<span class="lt cmt">(... ' + (allLines.length - MAX) +
+                    ' more lines, download to view the full program)</span>';
+                frag.appendChild(more);
+            }
+            body.appendChild(frag);
         }
 
         // Initialize 2D canvas for DXF setup
@@ -893,9 +1014,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveSettings(); // Persist rotation angle
             });
             
-            // Mode toggle listeners
-            document.querySelectorAll('.mode-button').forEach(btn => {
-                btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+            // Bottom-tab navigation listeners
+            document.querySelectorAll('.dc-tab').forEach(tab => {
+                tab.addEventListener('click', () => selectTab(tab.dataset.tab));
+            });
+
+            // View rail forwards to the existing rotate / reset-view controls
+            const viewRotateBtn = document.getElementById('viewRotateBtn');
+            if (viewRotateBtn) viewRotateBtn.addEventListener('click', () => {
+                const rb = document.getElementById('rotateBtn');
+                if (rb) rb.click();
+            });
+            const viewFitBtn = document.getElementById('viewFitBtn');
+            if (viewFitBtn) viewFitBtn.addEventListener('click', () => {
+                const rv = document.getElementById('resetView');
+                if (rv) rv.click();
             });
 
             // Plasma lead placement: click the part to drop/move/remove an
@@ -1444,8 +1577,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update form visibility based on detected layers (2D vs 2.5D)
             updateFormVisibility();
 
-            document.getElementById('modeToggle').style.display = 'flex';
-            switchMode('setup');
+            // Bottom tabs are always visible; land on the Setup DXF tab.
+            selectTab('setup');
         }
         
         function createEntity(type, data) {
@@ -2890,8 +3023,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isPlasma = (mode === 'plasma');
 
                 const millIds = [
-                    'millMaterialGroup', 'millThicknessGroup',
-                    'millTabGroup', 'millDivider', 'millToolGroup', 'tubeParams'
+                    'millSettingsHeader', 'millMaterialGroup', 'millThicknessGroup',
+                    'millDivider', 'millToolGroup'
                 ];
                 millIds.forEach(id => {
                     const el = document.getElementById(id);
@@ -2900,6 +3033,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const plasmaPanel = document.getElementById('plasmaParams');
                 if (plasmaPanel) plasmaPanel.style.display = isPlasma ? 'block' : 'none';
+
+                // Tube params + tab spacing are governed by material/geometry, not the
+                // machine mode. Hide them outright in plasma; in mill, let
+                // updateFormVisibility() decide tube visibility (tab group stays hidden).
+                const tubeParams = document.getElementById('tubeParams');
+                const millTabGroup = document.getElementById('millTabGroup');
+                if (isPlasma) {
+                    if (tubeParams) tubeParams.style.display = 'none';
+                    if (millTabGroup) millTabGroup.style.display = 'none';
+                } else {
+                    updateFormVisibility();
+                }
 
                 // Rotation controls are meaningless in plasma mode (DXF is pre-oriented)
                 const rotateBtn = document.getElementById('rotateBtn');
